@@ -43,3 +43,9 @@ export async function createInviteCode(coupleId: string, userId: string) {
     .select("id, couple_id, code, created_by, expires_at, used_at")
     .single<CoupleInvite>();
 }
+
+export async function joinCoupleByInviteCode(code: string) {
+  return supabase.rpc("join_couple_by_invite_code", {
+    invite_code: code.trim().toUpperCase(),
+  });
+}

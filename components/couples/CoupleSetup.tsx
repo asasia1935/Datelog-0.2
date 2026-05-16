@@ -3,28 +3,41 @@
 import { FormEvent, useState } from "react";
 
 type CoupleSetupProps = {
+  createErrorMessage?: string;
   displayName?: string | null;
-  errorMessage?: string;
   isSigningOut?: boolean;
+  joinErrorMessage?: string;
   onCreateCouple: (name: string) => Promise<void>;
+  onJoinByInviteCode: (code: string) => Promise<void>;
   onSignOut: () => void;
 };
 
 export default function CoupleSetup({
+  createErrorMessage = "",
   displayName = null,
-  errorMessage = "",
   isSigningOut = false,
+  joinErrorMessage = "",
   onCreateCouple,
+  onJoinByInviteCode,
   onSignOut,
 }: CoupleSetupProps) {
   const [coupleName, setCoupleName] = useState("우리의 DateLog");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
+  const [isCreatingCouple, setIsCreatingCouple] = useState(false);
+  const [isJoiningCouple, setIsJoiningCouple] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsSubmitting(true);
+    setIsCreatingCouple(true);
     await onCreateCouple(coupleName);
-    setIsSubmitting(false);
+    setIsCreatingCouple(false);
+  };
+
+  const handleJoinSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsJoiningCouple(true);
+    await onJoinByInviteCode(inviteCode);
+    setIsJoiningCouple(false);
   };
 
   return (
@@ -65,24 +78,56 @@ export default function CoupleSetup({
             />
           </label>
 
-          {errorMessage ? (
+          {createErrorMessage ? (
             <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-500">
-              {errorMessage}
+              {createErrorMessage}
             </p>
           ) : null}
 
           <button
             className="w-full rounded-xl bg-[var(--datelog-theme)] py-3 text-lg text-white shadow-md transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isSubmitting}
+            disabled={isCreatingCouple}
             type="submit"
           >
-            {isSubmitting ? "생성 중..." : "커플 공간 생성"}
+            {isCreatingCouple ? "생성 중..." : "커플 공간 생성"}
           </button>
         </form>
 
-        <p className="mt-5 text-center text-xs text-gray-400">
-          초대코드 참여 기능은 다음 단계에서 연결됩니다.
-        </p>
+        <div className="my-6 flex items-center gap-3 text-xs text-gray-300">
+          <span className="h-px flex-1 bg-gray-100" />
+          또는
+          <span className="h-px flex-1 bg-gray-100" />
+        </div>
+
+        <form className="space-y-4" onSubmit={handleJoinSubmit}>
+          <label className="block">
+            <span className="mb-1 block text-sm text-gray-500">
+              초대코드로 참여
+            </span>
+            <input
+              className="w-full rounded-xl border border-pink-100 bg-pink-50/40 px-4 py-3 uppercase tracking-[0.2em] outline-[var(--datelog-theme)]"
+              onChange={(event) => setInviteCode(event.target.value)}
+              placeholder="예: ABC123"
+              required
+              type="text"
+              value={inviteCode}
+            />
+          </label>
+
+          {joinErrorMessage ? (
+            <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-500">
+              {joinErrorMessage}
+            </p>
+          ) : null}
+
+          <button
+            className="w-full rounded-xl bg-white py-3 text-lg text-[var(--datelog-theme)] shadow-sm ring-1 ring-pink-100 transition hover:bg-pink-50 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isJoiningCouple}
+            type="submit"
+          >
+            {isJoiningCouple ? "참여 중..." : "초대코드로 참여"}
+          </button>
+        </form>
       </section>
     </main>
   );

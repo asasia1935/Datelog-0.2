@@ -14,10 +14,27 @@ import {
 import {
   createInviteCode,
   getActiveInviteByCoupleId,
+  joinCoupleByInviteCode,
   type CoupleInvite,
 } from "@/lib/supabase/invites";
 import { ensureOwnProfile, type Profile } from "@/lib/supabase/profiles";
 import { supabase } from "@/lib/supabase/client";
+
+type SupabaseLikeError = {
+  code?: string;
+  details?: string;
+  hint?: string;
+  message?: string;
+};
+
+function logSupabaseError(label: string, error: SupabaseLikeError | null) {
+  console.warn(label, {
+    code: error?.code,
+    details: error?.details,
+    hint: error?.hint,
+    message: error?.message,
+  });
+}
 
 export default function AuthenticatedHome() {
   const router = useRouter();
@@ -29,6 +46,8 @@ export default function AuthenticatedHome() {
   const [coupleMember, setCoupleMember] = useState<CoupleMember | null>(null);
   const [couple, setCouple] = useState<Couple | null>(null);
   const [coupleError, setCoupleError] = useState("");
+  const [createCoupleError, setCreateCoupleError] = useState("");
+  const [joinInviteError, setJoinInviteError] = useState("");
   const [invite, setInvite] = useState<CoupleInvite | null>(null);
   const [inviteError, setInviteError] = useState("");
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
@@ -115,6 +134,33 @@ export default function AuthenticatedHome() {
     };
   }, [router]);
 
+  const loadCoupleContext = async (memberData: CoupleMember) => {
+    setCoupleMember(memberData);
+
+    const { data: coupleData, error: coupleFetchError } = await getCoupleById(
+      memberData.couple_id,
+    );
+
+    if (coupleFetchError) {
+      console.error("Couple fetch failed:", coupleFetchError);
+      setCoupleError("커플 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } else {
+      setCouple(coupleData);
+      setCoupleError("");
+    }
+
+    const { data: inviteData, error: inviteFetchError } =
+      await getActiveInviteByCoupleId(memberData.couple_id);
+
+    if (inviteFetchError) {
+      console.error("Invite fetch failed:", inviteFetchError);
+      setInviteError("초대코드를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } else {
+      setInvite(inviteData);
+      setInviteError("");
+    }
+  };
+
   const handleSignOut = async () => {
     setIsSigningOut(true);
     await supabase.auth.signOut();
@@ -124,6 +170,8 @@ export default function AuthenticatedHome() {
   const handleCreateCouple = async (name: string) => {
     if (!userId) return;
 
+    setCreateCoupleError("");
+    setJoinInviteError("");
     setCoupleError("");
     const { data: memberData, error: createError } = await createCoupleWithOwner(
       userId,
@@ -131,26 +179,49 @@ export default function AuthenticatedHome() {
     );
 
     if (createError) {
-      console.error("Couple creation failed:", createError);
-      setCoupleError("커플 공간을 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
+      logSupabaseError("Couple creation failed", createError);
+      setCreateCoupleError("커플 공간을 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
       return;
     }
 
-    setCoupleMember(memberData);
-
     if (memberData) {
-      const { data: coupleData, error: coupleFetchError } = await getCoupleById(
-        memberData.couple_id,
-      );
-
-      if (coupleFetchError) {
-        console.error("Couple fetch after creation failed:", coupleFetchError);
-        setCoupleError("커플 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
-        return;
-      }
-
-      setCouple(coupleData);
+      await loadCoupleContext(memberData);
     }
+  };
+
+  const handleJoinByInviteCode = async (code: string) => {
+    if (!userId) return;
+
+    const normalizedCode = code.trim().toUpperCase();
+
+    if (!normalizedCode) {
+      setJoinInviteError("초대코드를 입력해주세요.");
+      return;
+    }
+
+    setCreateCoupleError("");
+    setJoinInviteError("");
+    const { error: joinError } = await joinCoupleByInviteCode(normalizedCode);
+
+    if (joinError) {
+      logSupabaseError("Join couple by invite code failed", joinError);
+      setJoinInviteError("초대코드를 확인하지 못했습니다. 코드를 다시 확인해주세요.");
+      return;
+    }
+
+    const { data: memberData, error: memberFetchError } =
+      await getOwnCoupleMember(userId);
+
+    if (memberFetchError || !memberData) {
+      logSupabaseError(
+        "Couple membership fetch after invite join failed",
+        memberFetchError,
+      );
+      setJoinInviteError("커플 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+
+    await loadCoupleContext(memberData);
   };
 
   const handleCreateInvite = async () => {
@@ -190,10 +261,12 @@ export default function AuthenticatedHome() {
   if (!coupleMember) {
     return (
       <CoupleSetup
+        createErrorMessage={createCoupleError || coupleError || profileError}
         displayName={profile?.display_name ?? null}
-        errorMessage={coupleError || profileError}
         isSigningOut={isSigningOut}
+        joinErrorMessage={joinInviteError}
         onCreateCouple={handleCreateCouple}
+        onJoinByInviteCode={handleJoinByInviteCode}
         onSignOut={handleSignOut}
       />
     );
