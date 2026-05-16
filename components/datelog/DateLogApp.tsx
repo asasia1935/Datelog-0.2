@@ -115,10 +115,10 @@ export default function DateLogApp({
             {onCreateInvite ? (
               <button
                 className="rounded-full px-3 py-2 text-sm text-gray-400 transition hover:bg-gray-100 hover:text-[var(--datelog-theme)]"
-                onClick={() => setInvitePanelOpen(true)}
+                onClick={() => setInvitePanelOpen((prev) => !prev)}
                 type="button"
               >
-                초대하기
+                {invitePanelOpen ? "초대 닫기" : "초대하기"}
               </button>
             ) : null}
             <button
