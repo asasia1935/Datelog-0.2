@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import InviteCodePanel from "@/components/couples/InviteCodePanel";
 import CalendarGrid from "./CalendarGrid";
+import DateLogDetailModal from "./DateLogDetailModal";
 import EntryModal from "./EntryModal";
 import SettingsModal from "./SettingsModal";
 import {
@@ -10,11 +11,15 @@ import {
   schedules as mockSchedules,
   settings as mockSettings,
 } from "./mock-data";
+import type { LogEntry, Schedule } from "./types";
 
 const initialDate = "2026-05-15";
+const emptySchedules: Schedule[] = [];
 
 type DateLogAppProps = {
   coupleName?: string | null;
+  dateLogs?: LogEntry[];
+  dateLogsError?: string;
   inviteCode?: string | null;
   inviteError?: string;
   isCreatingInvite?: boolean;
@@ -57,6 +62,8 @@ function StarLine({ value }: { value: number }) {
 
 export default function DateLogApp({
   coupleName = null,
+  dateLogs,
+  dateLogsError = "",
   inviteCode = null,
   inviteError = "",
   isCreatingInvite = false,
@@ -70,17 +77,21 @@ export default function DateLogApp({
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [entryOpen, setEntryOpen] = useState(false);
   const [invitePanelOpen, setInvitePanelOpen] = useState(false);
+  const [selectedLogForDetail, setSelectedLogForDetail] =
+    useState<LogEntry | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const activeLogs = dateLogs ?? mockLogs;
+  const activeSchedules = dateLogs ? emptySchedules : mockSchedules;
 
   const selectedSchedules = useMemo(
-    () => mockSchedules.filter((schedule) => schedule.date === selectedDate),
-    [selectedDate],
+    () => activeSchedules.filter((schedule) => schedule.date === selectedDate),
+    [activeSchedules, selectedDate],
   );
   const selectedLogs = useMemo(
-    () => mockLogs.filter((log) => log.date === selectedDate),
-    [selectedDate],
+    () => activeLogs.filter((log) => log.date === selectedDate),
+    [activeLogs, selectedDate],
   );
-  const todaySchedules = mockSchedules.filter(
+  const todaySchedules = activeSchedules.filter(
     (schedule) => schedule.date === initialDate,
   );
 
@@ -186,6 +197,12 @@ export default function DateLogApp({
           </div>
         ) : null}
 
+        {dateLogsError ? (
+          <div className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-500">
+            {dateLogsError}
+          </div>
+        ) : null}
+
         {onCreateInvite && invitePanelOpen ? (
           <InviteCodePanel
             code={inviteCode}
@@ -216,10 +233,10 @@ export default function DateLogApp({
           </div>
           <CalendarGrid
             labels={mockSettings.labels}
-            logs={mockLogs}
+            logs={activeLogs}
             monthDate={monthDate}
             onSelectDate={setSelectedDate}
-            schedules={mockSchedules}
+            schedules={activeSchedules}
             selectedDate={selectedDate}
           />
         </section>
@@ -270,11 +287,18 @@ export default function DateLogApp({
             ))}
 
             {selectedLogs.map((log) => (
-              <article
-                className="rounded-2xl border border-white bg-white p-4 shadow-sm"
+              <button
+                className="w-full rounded-2xl border border-white bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-pink-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-pink-200"
                 key={log.id}
+                onClick={() => setSelectedLogForDetail(log)}
+                type="button"
               >
                 <div className="mb-3 grid grid-cols-2 gap-3 text-sm">
+                  {log.title ? (
+                    <h3 className="col-span-2 text-lg text-gray-800">
+                      {log.title}
+                    </h3>
+                  ) : null}
                   <div>
                     <p className="text-gray-400">{mockSettings.myName}</p>
                     <StarLine value={log.ratingMy} />
@@ -307,7 +331,7 @@ export default function DateLogApp({
                     ))}
                   </div>
                 ) : null}
-              </article>
+              </button>
             ))}
 
             {!selectedSchedules.length && !selectedLogs.length ? (
@@ -330,6 +354,14 @@ export default function DateLogApp({
           open={settingsOpen}
           settings={mockSettings}
         />
+        {selectedLogForDetail ? (
+          <DateLogDetailModal
+            log={selectedLogForDetail}
+            myName={mockSettings.myName}
+            onClose={() => setSelectedLogForDetail(null)}
+            partnerName={mockSettings.partnerName}
+          />
+        ) : null}
       </div>
     </main>
   );

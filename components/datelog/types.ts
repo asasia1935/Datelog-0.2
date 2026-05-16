@@ -28,6 +28,7 @@ export type LogEntry = {
   reviewMy: string;
   reviewPartner: string;
   photos: PhotoMemory[];
+  title?: string;
 };
 
 export type DateLogSettings = {

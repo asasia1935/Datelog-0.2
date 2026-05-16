@@ -11,6 +11,7 @@ import {
   type Couple,
   type CoupleMember,
 } from "@/lib/supabase/couples";
+import { getDateLogsByCoupleId } from "@/lib/supabase/dateLogs";
 import {
   createInviteCode,
   getActiveInviteByCoupleId,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/supabase/invites";
 import { ensureOwnProfile, type Profile } from "@/lib/supabase/profiles";
 import { supabase } from "@/lib/supabase/client";
+import type { LogEntry } from "@/components/datelog/types";
 
 type SupabaseLikeError = {
   code?: string;
@@ -51,6 +53,8 @@ export default function AuthenticatedHome() {
   const [invite, setInvite] = useState<CoupleInvite | null>(null);
   const [inviteError, setInviteError] = useState("");
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
+  const [dateLogs, setDateLogs] = useState<LogEntry[] | null>(null);
+  const [dateLogsError, setDateLogsError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -122,6 +126,22 @@ export default function AuthenticatedHome() {
           setInvite(inviteData);
           setInviteError("");
         }
+
+        const { data: dateLogsData, error: dateLogsFetchError } =
+          await getDateLogsByCoupleId(memberData.couple_id);
+
+        if (!active) return;
+
+        if (dateLogsFetchError) {
+          logSupabaseError("Date logs fetch failed", dateLogsFetchError);
+          setDateLogs([]);
+          setDateLogsError(
+            "데이트 기록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.",
+          );
+        } else {
+          setDateLogs(dateLogsData ?? []);
+          setDateLogsError("");
+        }
       }
 
       setIsCheckingSession(false);
@@ -158,6 +178,18 @@ export default function AuthenticatedHome() {
     } else {
       setInvite(inviteData);
       setInviteError("");
+    }
+
+    const { data: dateLogsData, error: dateLogsFetchError } =
+      await getDateLogsByCoupleId(memberData.couple_id);
+
+    if (dateLogsFetchError) {
+      logSupabaseError("Date logs fetch failed", dateLogsFetchError);
+      setDateLogs([]);
+      setDateLogsError("데이트 기록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } else {
+      setDateLogs(dateLogsData ?? []);
+      setDateLogsError("");
     }
   };
 
@@ -275,6 +307,8 @@ export default function AuthenticatedHome() {
   return (
     <DateLogApp
       coupleName={couple?.name ?? null}
+      dateLogs={dateLogs ?? []}
+      dateLogsError={dateLogsError}
       inviteCode={invite?.code ?? null}
       inviteError={inviteError}
       isCreatingInvite={isCreatingInvite}
