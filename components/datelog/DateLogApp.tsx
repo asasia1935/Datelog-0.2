@@ -24,6 +24,13 @@ type DateLogAppProps = {
   inviteError?: string;
   isCreatingInvite?: boolean;
   isSigningOut?: boolean;
+  onCreateDateLog?: (input: {
+    content: string;
+    logDate: string;
+    ratingUser1: number;
+    ratingUser2: number;
+    title: string;
+  }) => Promise<{ ok: boolean }>;
   onCreateInvite?: () => Promise<void>;
   onSignOut?: () => void;
   profileDisplayName?: string | null;
@@ -68,6 +75,7 @@ export default function DateLogApp({
   inviteError = "",
   isCreatingInvite = false,
   isSigningOut = false,
+  onCreateDateLog,
   onCreateInvite,
   onSignOut,
   profileDisplayName = null,
@@ -343,8 +351,8 @@ export default function DateLogApp({
         </section>
 
         <EntryModal
-          labels={mockSettings.labels}
           onClose={() => setEntryOpen(false)}
+          onSaveDateLog={onCreateDateLog}
           open={entryOpen}
           selectedDate={selectedDate}
           settings={mockSettings}

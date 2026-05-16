@@ -10,6 +10,16 @@ type DateLogRow = {
   title: string;
 };
 
+type CreateDateLogInput = {
+  content: string;
+  coupleId: string;
+  logDate: string;
+  ratingUser1: number;
+  ratingUser2: number;
+  title: string;
+  userId: string;
+};
+
 export async function getDateLogsByCoupleId(coupleId: string) {
   const { data, error } = await supabase
     .from("date_logs")
@@ -35,4 +45,24 @@ export async function getDateLogsByCoupleId(coupleId: string) {
   }));
 
   return { data: logs, error: null };
+}
+
+export async function createDateLog({
+  content,
+  coupleId,
+  logDate,
+  ratingUser1,
+  ratingUser2,
+  title,
+  userId,
+}: CreateDateLogInput) {
+  return supabase.from("date_logs").insert({
+    content,
+    couple_id: coupleId,
+    created_by: userId,
+    log_date: logDate,
+    rating_user_1: ratingUser1,
+    rating_user_2: ratingUser2,
+    title,
+  });
 }

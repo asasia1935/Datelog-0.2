@@ -11,7 +11,7 @@ import {
   type Couple,
   type CoupleMember,
 } from "@/lib/supabase/couples";
-import { getDateLogsByCoupleId } from "@/lib/supabase/dateLogs";
+import { createDateLog, getDateLogsByCoupleId } from "@/lib/supabase/dateLogs";
 import {
   createInviteCode,
   getActiveInviteByCoupleId,
@@ -278,6 +278,46 @@ export default function AuthenticatedHome() {
     setInvite(inviteData);
   };
 
+  const handleCreateDateLog = async (input: {
+    content: string;
+    logDate: string;
+    ratingUser1: number;
+    ratingUser2: number;
+    title: string;
+  }) => {
+    if (!coupleMember || !userId) {
+      return { ok: false };
+    }
+
+    const { error: createError } = await createDateLog({
+      content: input.content,
+      coupleId: coupleMember.couple_id,
+      logDate: input.logDate,
+      ratingUser1: input.ratingUser1,
+      ratingUser2: input.ratingUser2,
+      title: input.title,
+      userId,
+    });
+
+    if (createError) {
+      logSupabaseError("Date log creation failed", createError);
+      return { ok: false };
+    }
+
+    const { data: dateLogsData, error: dateLogsFetchError } =
+      await getDateLogsByCoupleId(coupleMember.couple_id);
+
+    if (dateLogsFetchError) {
+      logSupabaseError("Date logs refetch after creation failed", dateLogsFetchError);
+      setDateLogsError("데이트 기록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      return { ok: false };
+    }
+
+    setDateLogs(dateLogsData ?? []);
+    setDateLogsError("");
+    return { ok: true };
+  };
+
   if (isCheckingSession) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#fff7fb] px-4 text-[#3f2d37]">
@@ -313,6 +353,7 @@ export default function AuthenticatedHome() {
       inviteError={inviteError}
       isCreatingInvite={isCreatingInvite}
       isSigningOut={isSigningOut}
+      onCreateDateLog={handleCreateDateLog}
       onCreateInvite={handleCreateInvite}
       onSignOut={handleSignOut}
       profileDisplayName={profile?.display_name ?? null}
