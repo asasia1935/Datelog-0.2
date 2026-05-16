@@ -1,5 +1,5 @@
-import DateLogApp from "@/components/datelog/DateLogApp";
+import AuthenticatedHome from "@/components/auth/AuthenticatedHome";
 
 export default function Home() {
-  return <DateLogApp />;
+  return <AuthenticatedHome />;
 }

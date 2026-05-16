@@ -12,6 +12,11 @@ import {
 
 const initialDate = "2026-05-15";
 
+type DateLogAppProps = {
+  isSigningOut?: boolean;
+  onSignOut?: () => void;
+};
+
 function formatMonth(date: Date) {
   return new Intl.DateTimeFormat("ko-KR", {
     year: "numeric",
@@ -42,7 +47,10 @@ function StarLine({ value }: { value: number }) {
   );
 }
 
-export default function DateLogApp() {
+export default function DateLogApp({
+  isSigningOut = false,
+  onSignOut,
+}: DateLogAppProps) {
   const [monthDate, setMonthDate] = useState(new Date(2026, 4, 1));
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [entryOpen, setEntryOpen] = useState(false);
@@ -127,6 +135,16 @@ export default function DateLogApp() {
                 />
               </svg>
             </button>
+            {onSignOut ? (
+              <button
+                className="rounded-full px-3 py-2 text-sm text-gray-400 transition hover:bg-gray-100 hover:text-[var(--datelog-theme)] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isSigningOut}
+                onClick={onSignOut}
+                type="button"
+              >
+                {isSigningOut ? "로그아웃 중" : "로그아웃"}
+              </button>
+            ) : null}
           </div>
         </header>
 
