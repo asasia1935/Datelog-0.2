@@ -6,6 +6,7 @@ type InviteCodePanelProps = {
   code?: string | null;
   errorMessage?: string;
   isCreating?: boolean;
+  onClose?: () => void;
   onCreateInvite: () => Promise<void>;
 };
 
@@ -13,6 +14,7 @@ export default function InviteCodePanel({
   code = null,
   errorMessage = "",
   isCreating = false,
+  onClose,
   onCreateInvite,
 }: InviteCodePanelProps) {
   const [copyMessage, setCopyMessage] = useState("");
@@ -38,16 +40,27 @@ export default function InviteCodePanel({
             상대방에게 코드를 전달해 커플 공간에 초대할 수 있습니다.
           </p>
         </div>
-        {!code ? (
-          <button
-            className="shrink-0 rounded-xl bg-[var(--datelog-theme)] px-4 py-2 text-sm text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isCreating}
-            onClick={onCreateInvite}
-            type="button"
-          >
-            {isCreating ? "생성 중" : "코드 생성"}
-          </button>
-        ) : null}
+        <div className="flex shrink-0 items-center gap-2">
+          {!code ? (
+            <button
+              className="rounded-xl bg-[var(--datelog-theme)] px-4 py-2 text-sm text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isCreating}
+              onClick={onCreateInvite}
+              type="button"
+            >
+              {isCreating ? "생성 중" : "코드 생성"}
+            </button>
+          ) : null}
+          {onClose ? (
+            <button
+              className="rounded-xl bg-white px-3 py-2 text-sm text-gray-400 shadow-sm transition hover:text-[var(--datelog-theme)]"
+              onClick={onClose}
+              type="button"
+            >
+              닫기
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {code ? (

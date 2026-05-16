@@ -69,6 +69,7 @@ export default function DateLogApp({
   const [monthDate, setMonthDate] = useState(new Date(2026, 4, 1));
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [entryOpen, setEntryOpen] = useState(false);
+  const [invitePanelOpen, setInvitePanelOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const selectedSchedules = useMemo(
@@ -111,6 +112,15 @@ export default function DateLogApp({
             ) : null}
           </div>
           <div className="flex gap-1">
+            {onCreateInvite ? (
+              <button
+                className="rounded-full px-3 py-2 text-sm text-gray-400 transition hover:bg-gray-100 hover:text-[var(--datelog-theme)]"
+                onClick={() => setInvitePanelOpen(true)}
+                type="button"
+              >
+                초대하기
+              </button>
+            ) : null}
             <button
               aria-label="홈으로"
               className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-[var(--datelog-theme)]"
@@ -176,11 +186,12 @@ export default function DateLogApp({
           </div>
         ) : null}
 
-        {onCreateInvite ? (
+        {onCreateInvite && invitePanelOpen ? (
           <InviteCodePanel
             code={inviteCode}
             errorMessage={inviteError}
             isCreating={isCreatingInvite}
+            onClose={() => setInvitePanelOpen(false)}
             onCreateInvite={onCreateInvite}
           />
         ) : null}
