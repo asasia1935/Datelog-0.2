@@ -2,7 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import CoupleSetup from "@/components/couples/CoupleSetup";
 import DateLogApp from "@/components/datelog/DateLogApp";
+import {
+  createCoupleWithOwner,
+  getOwnCoupleMember,
+  type CoupleMember,
+} from "@/lib/supabase/couples";
 import { ensureOwnProfile, type Profile } from "@/lib/supabase/profiles";
 import { supabase } from "@/lib/supabase/client";
 
@@ -12,6 +18,9 @@ export default function AuthenticatedHome() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileError, setProfileError] = useState("");
+  const [userId, setUserId] = useState("");
+  const [coupleMember, setCoupleMember] = useState<CoupleMember | null>(null);
+  const [coupleError, setCoupleError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -28,6 +37,8 @@ export default function AuthenticatedHome() {
         return;
       }
 
+      setUserId(session.user.id);
+
       const { data: profileData, error: profileFetchError } =
         await ensureOwnProfile(session.user);
 
@@ -39,6 +50,19 @@ export default function AuthenticatedHome() {
       } else {
         setProfile(profileData);
         setProfileError("");
+      }
+
+      const { data: memberData, error: memberFetchError } =
+        await getOwnCoupleMember(session.user.id);
+
+      if (!active) return;
+
+      if (memberFetchError) {
+        console.error("Couple membership fetch failed:", memberFetchError);
+        setCoupleError("커플 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      } else {
+        setCoupleMember(memberData);
+        setCoupleError("");
       }
 
       setIsCheckingSession(false);
@@ -57,6 +81,24 @@ export default function AuthenticatedHome() {
     router.replace("/login");
   };
 
+  const handleCreateCouple = async (name: string) => {
+    if (!userId) return;
+
+    setCoupleError("");
+    const { data: memberData, error: createError } = await createCoupleWithOwner(
+      userId,
+      name,
+    );
+
+    if (createError) {
+      console.error("Couple creation failed:", createError);
+      setCoupleError("커플 공간을 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+
+    setCoupleMember(memberData);
+  };
+
   if (isCheckingSession) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#fff7fb] px-4 text-[#3f2d37]">
@@ -66,6 +108,18 @@ export default function AuthenticatedHome() {
           </p>
         </div>
       </main>
+    );
+  }
+
+  if (!coupleMember) {
+    return (
+      <CoupleSetup
+        displayName={profile?.display_name ?? null}
+        errorMessage={coupleError || profileError}
+        isSigningOut={isSigningOut}
+        onCreateCouple={handleCreateCouple}
+        onSignOut={handleSignOut}
+      />
     );
   }
 
