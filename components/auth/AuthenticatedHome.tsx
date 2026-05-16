@@ -3,12 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import DateLogApp from "@/components/datelog/DateLogApp";
+import { ensureOwnProfile, type Profile } from "@/lib/supabase/profiles";
 import { supabase } from "@/lib/supabase/client";
 
 export default function AuthenticatedHome() {
   const router = useRouter();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileError, setProfileError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -23,6 +26,19 @@ export default function AuthenticatedHome() {
       if (!session) {
         router.replace("/login");
         return;
+      }
+
+      const { data: profileData, error: profileFetchError } =
+        await ensureOwnProfile(session.user);
+
+      if (!active) return;
+
+      if (profileFetchError) {
+        console.error("Profile ensure failed:", profileFetchError);
+        setProfileError("프로필을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      } else {
+        setProfile(profileData);
+        setProfileError("");
       }
 
       setIsCheckingSession(false);
@@ -54,6 +70,11 @@ export default function AuthenticatedHome() {
   }
 
   return (
-    <DateLogApp isSigningOut={isSigningOut} onSignOut={handleSignOut} />
+    <DateLogApp
+      isSigningOut={isSigningOut}
+      onSignOut={handleSignOut}
+      profileDisplayName={profile?.display_name ?? null}
+      profileError={profileError}
+    />
   );
 }

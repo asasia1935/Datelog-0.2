@@ -15,6 +15,8 @@ const initialDate = "2026-05-15";
 type DateLogAppProps = {
   isSigningOut?: boolean;
   onSignOut?: () => void;
+  profileDisplayName?: string | null;
+  profileError?: string;
 };
 
 function formatMonth(date: Date) {
@@ -50,6 +52,8 @@ function StarLine({ value }: { value: number }) {
 export default function DateLogApp({
   isSigningOut = false,
   onSignOut,
+  profileDisplayName = null,
+  profileError = "",
 }: DateLogAppProps) {
   const [monthDate, setMonthDate] = useState(new Date(2026, 4, 1));
   const [selectedDate, setSelectedDate] = useState(initialDate);
@@ -85,9 +89,16 @@ export default function DateLogApp({
         }
       >
         <header className="mb-5 flex items-center justify-between">
-          <h1 className="text-2xl text-[var(--datelog-theme)]">
-            ❤️ {mockSettings.title}
-          </h1>
+          <div>
+            <h1 className="text-2xl text-[var(--datelog-theme)]">
+              ❤️ {mockSettings.title}
+            </h1>
+            {profileDisplayName ? (
+              <p className="mt-1 text-sm text-gray-400">
+                {profileDisplayName}님, 안녕하세요.
+              </p>
+            ) : null}
+          </div>
           <div className="flex gap-1">
             <button
               aria-label="홈으로"
@@ -147,6 +158,12 @@ export default function DateLogApp({
             ) : null}
           </div>
         </header>
+
+        {profileError ? (
+          <div className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-500">
+            {profileError}
+          </div>
+        ) : null}
 
         <section className="mb-5">
           <div className="mb-4 flex items-center justify-between px-1">

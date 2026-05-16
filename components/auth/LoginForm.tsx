@@ -6,11 +6,20 @@ import { supabase } from "@/lib/supabase/client";
 
 type AuthMode = "login" | "signup";
 
+function getAuthErrorMessage(message: string) {
+  if (message.toLowerCase().includes("email rate limit exceeded")) {
+    return "인증 메일 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.";
+  }
+
+  return "인증 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.";
+}
+
 export default function LoginForm() {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [noticeMessage, setNoticeMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,26 +60,47 @@ export default function LoginForm() {
       return;
     }
 
+    if (mode === "signup" && !displayName.trim()) {
+      setErrorMessage("회원가입 시 표시 이름을 입력해주세요.");
+      return;
+    }
+
     setIsSubmitting(true);
 
-    const { error } =
-      mode === "login"
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+    if (mode === "login") {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      setIsSubmitting(false);
 
+      if (error) {
+        console.error("Supabase signInWithPassword failed:", error);
+        setErrorMessage(getAuthErrorMessage(error.message));
+        return;
+      }
+
+      router.replace("/");
+      return;
+    }
+
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          display_name: displayName.trim(),
+        },
+      },
+    });
     setIsSubmitting(false);
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (signUpError) {
+      console.error("Supabase signUp failed:", signUpError);
+      setErrorMessage(getAuthErrorMessage(signUpError.message));
       return;
     }
 
-    if (mode === "signup") {
-      setNoticeMessage("회원가입이 완료되었습니다. 가입 확인 메일이 필요할 수 있습니다.");
-      return;
-    }
-
-    router.replace("/");
+    setNoticeMessage(
+      "인증 메일을 보냈습니다. 이메일 인증을 완료한 뒤 로그인해주세요.",
+    );
   };
 
   const switchMode = (nextMode: AuthMode) => {
@@ -128,6 +158,21 @@ export default function LoginForm() {
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
+          {mode === "signup" ? (
+            <label className="block">
+              <span className="mb-1 block text-sm text-gray-500">표시 이름</span>
+              <input
+                autoComplete="name"
+                className="w-full rounded-xl border border-pink-100 bg-pink-50/40 px-4 py-3 outline-[var(--datelog-theme)]"
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder="DateLog에서 사용할 이름"
+                required
+                type="text"
+                value={displayName}
+              />
+            </label>
+          ) : null}
+
           <label className="block">
             <span className="mb-1 block text-sm text-gray-500">이메일</span>
             <input
