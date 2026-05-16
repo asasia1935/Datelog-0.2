@@ -7,12 +7,25 @@ export type CoupleMember = {
   role: "owner" | "member";
 };
 
+export type Couple = {
+  id: string;
+  name: string;
+};
+
 export async function getOwnCoupleMember(userId: string) {
   return supabase
     .from("couple_members")
     .select("id, couple_id, user_id, role")
     .eq("user_id", userId)
     .maybeSingle<CoupleMember>();
+}
+
+export async function getCoupleById(coupleId: string) {
+  return supabase
+    .from("couples")
+    .select("id, name")
+    .eq("id", coupleId)
+    .single<Couple>();
 }
 
 export async function createCoupleWithOwner(userId: string, name: string) {

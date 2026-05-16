@@ -13,6 +13,7 @@ import {
 const initialDate = "2026-05-15";
 
 type DateLogAppProps = {
+  coupleName?: string | null;
   isSigningOut?: boolean;
   onSignOut?: () => void;
   profileDisplayName?: string | null;
@@ -50,6 +51,7 @@ function StarLine({ value }: { value: number }) {
 }
 
 export default function DateLogApp({
+  coupleName = null,
   isSigningOut = false,
   onSignOut,
   profileDisplayName = null,
@@ -91,7 +93,7 @@ export default function DateLogApp({
         <header className="mb-5 flex items-center justify-between">
           <div>
             <h1 className="text-2xl text-[var(--datelog-theme)]">
-              ❤️ {mockSettings.title}
+              ❤️ {coupleName || mockSettings.title}
             </h1>
             {profileDisplayName ? (
               <p className="mt-1 text-sm text-gray-400">

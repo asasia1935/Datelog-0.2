@@ -6,7 +6,9 @@ import CoupleSetup from "@/components/couples/CoupleSetup";
 import DateLogApp from "@/components/datelog/DateLogApp";
 import {
   createCoupleWithOwner,
+  getCoupleById,
   getOwnCoupleMember,
+  type Couple,
   type CoupleMember,
 } from "@/lib/supabase/couples";
 import { ensureOwnProfile, type Profile } from "@/lib/supabase/profiles";
@@ -20,6 +22,7 @@ export default function AuthenticatedHome() {
   const [profileError, setProfileError] = useState("");
   const [userId, setUserId] = useState("");
   const [coupleMember, setCoupleMember] = useState<CoupleMember | null>(null);
+  const [couple, setCouple] = useState<Couple | null>(null);
   const [coupleError, setCoupleError] = useState("");
 
   useEffect(() => {
@@ -65,6 +68,22 @@ export default function AuthenticatedHome() {
         setCoupleError("");
       }
 
+      if (memberData) {
+        const { data: coupleData, error: coupleFetchError } = await getCoupleById(
+          memberData.couple_id,
+        );
+
+        if (!active) return;
+
+        if (coupleFetchError) {
+          console.error("Couple fetch failed:", coupleFetchError);
+          setCoupleError("커플 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+        } else {
+          setCouple(coupleData);
+          setCoupleError("");
+        }
+      }
+
       setIsCheckingSession(false);
     };
 
@@ -97,6 +116,20 @@ export default function AuthenticatedHome() {
     }
 
     setCoupleMember(memberData);
+
+    if (memberData) {
+      const { data: coupleData, error: coupleFetchError } = await getCoupleById(
+        memberData.couple_id,
+      );
+
+      if (coupleFetchError) {
+        console.error("Couple fetch after creation failed:", coupleFetchError);
+        setCoupleError("커플 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+        return;
+      }
+
+      setCouple(coupleData);
+    }
   };
 
   if (isCheckingSession) {
@@ -125,6 +158,7 @@ export default function AuthenticatedHome() {
 
   return (
     <DateLogApp
+      coupleName={couple?.name ?? null}
       isSigningOut={isSigningOut}
       onSignOut={handleSignOut}
       profileDisplayName={profile?.display_name ?? null}
