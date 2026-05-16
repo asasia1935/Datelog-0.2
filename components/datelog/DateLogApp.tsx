@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import InviteCodePanel from "@/components/couples/InviteCodePanel";
 import CalendarGrid from "./CalendarGrid";
 import EntryModal from "./EntryModal";
 import SettingsModal from "./SettingsModal";
@@ -14,7 +15,11 @@ const initialDate = "2026-05-15";
 
 type DateLogAppProps = {
   coupleName?: string | null;
+  inviteCode?: string | null;
+  inviteError?: string;
+  isCreatingInvite?: boolean;
   isSigningOut?: boolean;
+  onCreateInvite?: () => Promise<void>;
   onSignOut?: () => void;
   profileDisplayName?: string | null;
   profileError?: string;
@@ -52,7 +57,11 @@ function StarLine({ value }: { value: number }) {
 
 export default function DateLogApp({
   coupleName = null,
+  inviteCode = null,
+  inviteError = "",
+  isCreatingInvite = false,
   isSigningOut = false,
+  onCreateInvite,
   onSignOut,
   profileDisplayName = null,
   profileError = "",
@@ -165,6 +174,15 @@ export default function DateLogApp({
           <div className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-500">
             {profileError}
           </div>
+        ) : null}
+
+        {onCreateInvite ? (
+          <InviteCodePanel
+            code={inviteCode}
+            errorMessage={inviteError}
+            isCreating={isCreatingInvite}
+            onCreateInvite={onCreateInvite}
+          />
         ) : null}
 
         <section className="mb-5">

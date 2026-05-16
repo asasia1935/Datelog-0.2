@@ -11,6 +11,11 @@ import {
   type Couple,
   type CoupleMember,
 } from "@/lib/supabase/couples";
+import {
+  createInviteCode,
+  getActiveInviteByCoupleId,
+  type CoupleInvite,
+} from "@/lib/supabase/invites";
 import { ensureOwnProfile, type Profile } from "@/lib/supabase/profiles";
 import { supabase } from "@/lib/supabase/client";
 
@@ -24,6 +29,9 @@ export default function AuthenticatedHome() {
   const [coupleMember, setCoupleMember] = useState<CoupleMember | null>(null);
   const [couple, setCouple] = useState<Couple | null>(null);
   const [coupleError, setCoupleError] = useState("");
+  const [invite, setInvite] = useState<CoupleInvite | null>(null);
+  const [inviteError, setInviteError] = useState("");
+  const [isCreatingInvite, setIsCreatingInvite] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -82,6 +90,19 @@ export default function AuthenticatedHome() {
           setCouple(coupleData);
           setCoupleError("");
         }
+
+        const { data: inviteData, error: inviteFetchError } =
+          await getActiveInviteByCoupleId(memberData.couple_id);
+
+        if (!active) return;
+
+        if (inviteFetchError) {
+          console.error("Invite fetch failed:", inviteFetchError);
+          setInviteError("초대코드를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+        } else {
+          setInvite(inviteData);
+          setInviteError("");
+        }
       }
 
       setIsCheckingSession(false);
@@ -132,6 +153,28 @@ export default function AuthenticatedHome() {
     }
   };
 
+  const handleCreateInvite = async () => {
+    if (!coupleMember || !userId) return;
+
+    setIsCreatingInvite(true);
+    setInviteError("");
+
+    const { data: inviteData, error: inviteCreateError } = await createInviteCode(
+      coupleMember.couple_id,
+      userId,
+    );
+
+    setIsCreatingInvite(false);
+
+    if (inviteCreateError) {
+      console.error("Invite creation failed:", inviteCreateError);
+      setInviteError("초대코드를 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+
+    setInvite(inviteData);
+  };
+
   if (isCheckingSession) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#fff7fb] px-4 text-[#3f2d37]">
@@ -159,7 +202,11 @@ export default function AuthenticatedHome() {
   return (
     <DateLogApp
       coupleName={couple?.name ?? null}
+      inviteCode={invite?.code ?? null}
+      inviteError={inviteError}
+      isCreatingInvite={isCreatingInvite}
       isSigningOut={isSigningOut}
+      onCreateInvite={handleCreateInvite}
       onSignOut={handleSignOut}
       profileDisplayName={profile?.display_name ?? null}
       profileError={profileError}
